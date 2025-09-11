@@ -1,0 +1,1263 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sistema de Inventarios - TechStore DB</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-gray-100 min-h-screen">
+    <!-- Header -->
+    <header class="bg-white shadow-md border-b-2 border-blue-600">
+      <div class="max-w-7xl mx-auto px-6 py-4">
+        <div class="flex justify-between items-center">
+          <div class="flex items-center">
+            <div class="bg-blue-600 text-white p-2 rounded mr-3">
+              <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
+                />
+              </svg>
+            </div>
+            <div>
+              <h1 class="text-xl font-bold text-gray-900">
+                Sistema de Inventarios
+              </h1>
+              <p class="text-sm text-gray-600">
+                Base de Datos: inventory_db | Servidor: PROD-001
+              </p>
+            </div>
+          </div>
+          <div class="flex items-center space-x-4">
+            <div class="text-right">
+              <p class="text-sm text-gray-600">Última sincronización</p>
+              <p class="text-sm font-medium" id="lastSync">
+                2024-01-15 14:32:18
+              </p>
+            </div>
+            <button
+              onclick="syncDatabase()"
+              class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded font-medium"
+            >
+              Sincronizar DB
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="max-w-7xl mx-auto px-6 py-6">
+      <!-- Database Stats -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+        <div class="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-gray-600 uppercase">
+                Total Registros
+              </p>
+              <p class="text-2xl font-bold text-gray-900" id="totalRecords">
+                1,847
+              </p>
+              <p class="text-xs text-gray-500 mt-1">Tabla: products</p>
+            </div>
+            <div class="bg-blue-100 p-3 rounded">
+              <svg
+                class="w-6 h-6 text-blue-600"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"
+                />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6 border-l-4 border-green-500">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-gray-600 uppercase">
+                Valor Total
+              </p>
+              <p class="text-2xl font-bold text-gray-900">$4,892,340</p>
+              <p class="text-xs text-gray-500 mt-1">SUM(price * stock)</p>
+            </div>
+            <div class="bg-green-100 p-3 rounded">
+              <svg
+                class="w-6 h-6 text-green-600"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z"
+                />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <div
+          class="bg-white rounded-lg shadow p-6 border-l-4 border-yellow-500"
+        >
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-gray-600 uppercase">
+                Alertas Stock
+              </p>
+              <p class="text-2xl font-bold text-gray-900" id="stockAlerts">
+                47
+              </p>
+              <p class="text-xs text-gray-500 mt-1">WHERE stock <= min_stock</p>
+            </div>
+            <div class="bg-yellow-100 p-3 rounded">
+              <svg
+                class="w-6 h-6 text-yellow-600"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fill-rule="evenodd"
+                  d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                  clip-rule="evenodd"
+                />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6 border-l-4 border-red-500">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-gray-600 uppercase">
+                Sin Stock
+              </p>
+              <p class="text-2xl font-bold text-gray-900" id="outOfStock">12</p>
+              <p class="text-xs text-gray-500 mt-1">WHERE stock = 0</p>
+            </div>
+            <div class="bg-red-100 p-3 rounded">
+              <svg
+                class="w-6 h-6 text-red-600"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fill-rule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                  clip-rule="evenodd"
+                />
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Query Builder & Filters -->
+      <div class="bg-white rounded-lg shadow mb-6">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h3 class="text-lg font-semibold text-gray-900">
+            Consultas y Filtros
+          </h3>
+        </div>
+        <div class="p-6">
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1"
+                >Categoría</label
+              >
+              <select
+                id="categoryFilter"
+                onchange="applyFilters()"
+                class="w-full border border-gray-300 rounded px-3 py-2"
+              >
+                <option value="">Todas</option>
+                <option value="smartphones">Smartphones</option>
+                <option value="laptops">Laptops</option>
+                <option value="tablets">Tablets</option>
+                <option value="accesorios">Accesorios</option>
+                <option value="audio">Audio</option>
+                <option value="gaming">Gaming</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1"
+                >Estado Stock</label
+              >
+              <select
+                id="stockFilter"
+                onchange="applyFilters()"
+                class="w-full border border-gray-300 rounded px-3 py-2"
+              >
+                <option value="">Todos</option>
+                <option value="available">En Stock</option>
+                <option value="low">Stock Bajo</option>
+                <option value="out">Sin Stock</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1"
+                >Proveedor</label
+              >
+              <select
+                id="supplierFilter"
+                onchange="applyFilters()"
+                class="w-full border border-gray-300 rounded px-3 py-2"
+              >
+                <option value="">Todos</option>
+                <option value="apple">Apple Inc.</option>
+                <option value="samsung">Samsung</option>
+                <option value="dell">Dell Technologies</option>
+                <option value="hp">HP Inc.</option>
+                <option value="sony">Sony</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1"
+                >Buscar SKU/Nombre</label
+              >
+              <input
+                type="text"
+                id="searchInput"
+                onkeyup="applyFilters()"
+                placeholder="Buscar..."
+                class="w-full border border-gray-300 rounded px-3 py-2"
+              />
+            </div>
+          </div>
+          <div class="flex justify-between items-center">
+            <div class="flex space-x-2">
+              <button
+                onclick="exportData('csv')"
+                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm"
+              >
+                Exportar CSV
+              </button>
+              <button
+                onclick="exportData('excel')"
+                class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm"
+              >
+                Exportar Excel
+              </button>
+              <button
+                onclick="generateReport()"
+                class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded text-sm"
+              >
+                Generar Reporte
+              </button>
+            </div>
+            <div class="flex items-center space-x-2">
+              <span class="text-sm text-gray-600">Registros por página:</span>
+              <select
+                id="recordsPerPage"
+                onchange="changePageSize()"
+                class="border border-gray-300 rounded px-2 py-1 text-sm"
+              >
+                <option value="25">25</option>
+                <option value="50" selected>50</option>
+                <option value="100">100</option>
+                <option value="500">500</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Data Table -->
+      <div class="bg-white rounded-lg shadow">
+        <div
+          class="px-6 py-4 border-b border-gray-200 flex justify-between items-center"
+        >
+          <div>
+            <h3 class="text-lg font-semibold text-gray-900">
+              Inventario de Productos
+            </h3>
+            <p class="text-sm text-gray-600">
+              Mostrando <span id="showingCount">1-50</span> de
+              <span id="totalCount">1,847</span> registros
+            </p>
+          </div>
+          <div class="flex space-x-2">
+            <button
+              onclick="showAddModal()"
+              class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
+            >
+              + Nuevo Producto
+            </button>
+            <button
+              onclick="bulkUpdate()"
+              class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded"
+            >
+              Actualización Masiva
+            </button>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th
+                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  <input
+                    type="checkbox"
+                    id="selectAll"
+                    onchange="toggleSelectAll()"
+                    class="rounded"
+                  />
+                </th>
+                <th
+                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                  onclick="sortTable('sku')"
+                >
+                  SKU <span id="sort-sku">↕</span>
+                </th>
+                <th
+                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                  onclick="sortTable('name')"
+                >
+                  Producto <span id="sort-name">↕</span>
+                </th>
+                <th
+                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  Categoría
+                </th>
+                <th
+                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  Proveedor
+                </th>
+                <th
+                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                  onclick="sortTable('stock')"
+                >
+                  Stock <span id="sort-stock">↕</span>
+                </th>
+                <th
+                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  Stock Mín.
+                </th>
+                <th
+                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                  onclick="sortTable('price')"
+                >
+                  Precio <span id="sort-price">↕</span>
+                </th>
+                <th
+                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  Estado
+                </th>
+                <th
+                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  Última Act.
+                </th>
+                <th
+                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  Acciones
+                </th>
+              </tr>
+            </thead>
+            <tbody
+              id="productTableBody"
+              class="bg-white divide-y divide-gray-200"
+            >
+              <!-- Data populated by JavaScript -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        <div
+          class="px-6 py-4 border-t border-gray-200 flex items-center justify-between"
+        >
+          <div class="flex items-center space-x-2">
+            <button
+              onclick="previousPage()"
+              id="prevBtn"
+              class="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50"
+            >
+              Anterior
+            </button>
+            <div id="pageNumbers" class="flex space-x-1">
+              <!-- Page numbers populated by JavaScript -->
+            </div>
+            <button
+              onclick="nextPage()"
+              id="nextBtn"
+              class="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50"
+            >
+              Siguiente
+            </button>
+          </div>
+          <div class="text-sm text-gray-600">
+            Página <span id="currentPageDisplay">1</span> de
+            <span id="totalPagesDisplay">37</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add/Edit Product Modal -->
+    <div
+      id="productModal"
+      class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center z-50"
+    >
+      <div
+        class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-screen overflow-y-auto"
+      >
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h3 class="text-lg font-semibold text-gray-900" id="modalTitle">
+            Agregar Nuevo Producto
+          </h3>
+        </div>
+        <div class="p-6">
+          <form id="productForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1"
+                >SKU *</label
+              >
+              <input
+                type="text"
+                id="productSku"
+                class="w-full border border-gray-300 rounded px-3 py-2"
+                required
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1"
+                >Nombre del Producto *</label
+              >
+              <input
+                type="text"
+                id="productName"
+                class="w-full border border-gray-300 rounded px-3 py-2"
+                required
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1"
+                >Categoría *</label
+              >
+              <select
+                id="productCategory"
+                class="w-full border border-gray-300 rounded px-3 py-2"
+                required
+              >
+                <option value="">Seleccionar</option>
+                <option value="smartphones">Smartphones</option>
+                <option value="laptops">Laptops</option>
+                <option value="tablets">Tablets</option>
+                <option value="accesorios">Accesorios</option>
+                <option value="audio">Audio</option>
+                <option value="gaming">Gaming</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1"
+                >Proveedor *</label
+              >
+              <select
+                id="productSupplier"
+                class="w-full border border-gray-300 rounded px-3 py-2"
+                required
+              >
+                <option value="">Seleccionar</option>
+                <option value="apple">Apple Inc.</option>
+                <option value="samsung">Samsung</option>
+                <option value="dell">Dell Technologies</option>
+                <option value="hp">HP Inc.</option>
+                <option value="sony">Sony</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1"
+                >Stock Actual *</label
+              >
+              <input
+                type="number"
+                id="productStock"
+                min="0"
+                class="w-full border border-gray-300 rounded px-3 py-2"
+                required
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1"
+                >Stock Mínimo *</label
+              >
+              <input
+                type="number"
+                id="productMinStock"
+                min="0"
+                class="w-full border border-gray-300 rounded px-3 py-2"
+                required
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1"
+                >Precio de Compra *</label
+              >
+              <input
+                type="number"
+                id="productCostPrice"
+                min="0"
+                step="0.01"
+                class="w-full border border-gray-300 rounded px-3 py-2"
+                required
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1"
+                >Precio de Venta *</label
+              >
+              <input
+                type="number"
+                id="productSalePrice"
+                min="0"
+                step="0.01"
+                class="w-full border border-gray-300 rounded px-3 py-2"
+                required
+              />
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-sm font-medium text-gray-700 mb-1"
+                >Descripción</label
+              >
+              <textarea
+                id="productDescription"
+                rows="3"
+                class="w-full border border-gray-300 rounded px-3 py-2"
+              ></textarea>
+            </div>
+          </form>
+        </div>
+        <div
+          class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3"
+        >
+          <button
+            onclick="hideModal()"
+            class="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded"
+          >
+            Cancelar
+          </button>
+          <button
+            onclick="saveProduct()"
+            class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded"
+          >
+            Guardar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Database simulation
+      let products = [
+        {
+          id: 1,
+          sku: "IPH15P-128",
+          name: "iPhone 15 Pro 128GB",
+          category: "smartphones",
+          supplier: "apple",
+          stock: 45,
+          minStock: 10,
+          costPrice: 899.99,
+          salePrice: 1299.99,
+          lastUpdated: "2024-01-15 09:30:00",
+          status: "available",
+        },
+        {
+          id: 2,
+          sku: "MBP16-M3",
+          name: 'MacBook Pro 16" M3',
+          category: "laptops",
+          supplier: "apple",
+          stock: 12,
+          minStock: 5,
+          costPrice: 1899.99,
+          salePrice: 2499.99,
+          lastUpdated: "2024-01-15 08:15:00",
+          status: "available",
+        },
+        {
+          id: 3,
+          sku: "IPAD-AIR-5",
+          name: "iPad Air 5ta Gen",
+          category: "tablets",
+          supplier: "apple",
+          stock: 8,
+          minStock: 15,
+          costPrice: 499.99,
+          salePrice: 699.99,
+          lastUpdated: "2024-01-14 16:45:00",
+          status: "low",
+        },
+        {
+          id: 4,
+          sku: "APP-PRO-2",
+          name: "AirPods Pro 2da Gen",
+          category: "audio",
+          supplier: "apple",
+          stock: 67,
+          minStock: 20,
+          costPrice: 179.99,
+          salePrice: 249.99,
+          lastUpdated: "2024-01-15 11:20:00",
+          status: "available",
+        },
+        {
+          id: 5,
+          sku: "SGS24-256",
+          name: "Samsung Galaxy S24 256GB",
+          category: "smartphones",
+          supplier: "samsung",
+          stock: 23,
+          minStock: 10,
+          costPrice: 849.99,
+          salePrice: 1199.99,
+          lastUpdated: "2024-01-15 07:30:00",
+          status: "available",
+        },
+        {
+          id: 6,
+          sku: "XPS13-I7",
+          name: "Dell XPS 13 Intel i7",
+          category: "laptops",
+          supplier: "dell",
+          stock: 0,
+          minStock: 5,
+          costPrice: 1299.99,
+          salePrice: 1899.99,
+          lastUpdated: "2024-01-12 14:00:00",
+          status: "out",
+        },
+        {
+          id: 7,
+          sku: "MM-SPACE",
+          name: "Magic Mouse Space Gray",
+          category: "accesorios",
+          supplier: "apple",
+          stock: 34,
+          minStock: 10,
+          costPrice: 69.99,
+          salePrice: 99.99,
+          lastUpdated: "2024-01-15 10:15:00",
+          status: "available",
+        },
+        {
+          id: 8,
+          sku: "SP9-I5",
+          name: "Surface Pro 9 Intel i5",
+          category: "tablets",
+          supplier: "hp",
+          stock: 15,
+          minStock: 8,
+          costPrice: 899.99,
+          salePrice: 1299.99,
+          lastUpdated: "2024-01-14 13:45:00",
+          status: "available",
+        },
+        {
+          id: 9,
+          sku: "PS5-CTRL",
+          name: "PlayStation 5 Controller",
+          category: "gaming",
+          supplier: "sony",
+          stock: 5,
+          minStock: 15,
+          costPrice: 49.99,
+          salePrice: 69.99,
+          lastUpdated: "2024-01-13 09:00:00",
+          status: "low",
+        },
+        {
+          id: 10,
+          sku: "WH1000XM5",
+          name: "Sony WH-1000XM5 Headphones",
+          category: "audio",
+          supplier: "sony",
+          stock: 28,
+          minStock: 12,
+          costPrice: 279.99,
+          salePrice: 399.99,
+          lastUpdated: "2024-01-15 12:30:00",
+          status: "available",
+        },
+      ];
+
+      let filteredProducts = [...products];
+      let currentPage = 1;
+      let recordsPerPage = 50;
+      let sortField = "";
+      let sortDirection = "asc";
+      let nextId = 11;
+      let editingId = null;
+
+      // Initialize
+      function init() {
+        updateStats();
+        renderTable();
+        updatePagination();
+        updateSyncTime();
+      }
+
+      // Update statistics
+      function updateStats() {
+        const totalRecords = products.length;
+        const totalValue = products.reduce(
+          (sum, p) => sum + p.salePrice * p.stock,
+          0
+        );
+        const stockAlerts = products.filter(
+          (p) => p.stock <= p.minStock && p.stock > 0
+        ).length;
+        const outOfStock = products.filter((p) => p.stock === 0).length;
+
+        document.getElementById("totalRecords").textContent =
+          totalRecords.toLocaleString();
+        document.getElementById("stockAlerts").textContent = stockAlerts;
+        document.getElementById("outOfStock").textContent = outOfStock;
+      }
+
+      // Apply filters
+      function applyFilters() {
+        const category = document.getElementById("categoryFilter").value;
+        const stockStatus = document.getElementById("stockFilter").value;
+        const supplier = document.getElementById("supplierFilter").value;
+        const search = document
+          .getElementById("searchInput")
+          .value.toLowerCase();
+
+        filteredProducts = products.filter((product) => {
+          const matchesCategory = !category || product.category === category;
+          const matchesStock = !stockStatus || product.status === stockStatus;
+          const matchesSupplier = !supplier || product.supplier === supplier;
+          const matchesSearch =
+            !search ||
+            product.name.toLowerCase().includes(search) ||
+            product.sku.toLowerCase().includes(search);
+
+          return (
+            matchesCategory && matchesStock && matchesSupplier && matchesSearch
+          );
+        });
+
+        currentPage = 1;
+        renderTable();
+        updatePagination();
+      }
+
+      // Sort table
+      function sortTable(field) {
+        if (sortField === field) {
+          sortDirection = sortDirection === "asc" ? "desc" : "asc";
+        } else {
+          sortField = field;
+          sortDirection = "asc";
+        }
+
+        // Update sort indicators
+        document
+          .querySelectorAll('[id^="sort-"]')
+          .forEach((el) => (el.textContent = "↕"));
+        document.getElementById(`sort-${field}`).textContent =
+          sortDirection === "asc" ? "↑" : "↓";
+
+        filteredProducts.sort((a, b) => {
+          let aVal = a[field];
+          let bVal = b[field];
+
+          if (typeof aVal === "string") {
+            aVal = aVal.toLowerCase();
+            bVal = bVal.toLowerCase();
+          }
+
+          if (sortDirection === "asc") {
+            return aVal > bVal ? 1 : -1;
+          } else {
+            return aVal < bVal ? 1 : -1;
+          }
+        });
+
+        renderTable();
+      }
+
+      // Render table
+      function renderTable() {
+        const tbody = document.getElementById("productTableBody");
+        const start = (currentPage - 1) * recordsPerPage;
+        const end = start + recordsPerPage;
+        const pageProducts = filteredProducts.slice(start, end);
+
+        tbody.innerHTML = pageProducts
+          .map(
+            (product) => `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <input type="checkbox" class="product-checkbox rounded" value="${
+                          product.id
+                        }">
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-900">${
+                      product.sku
+                    }</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">${
+                          product.name
+                        }</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            ${product.category}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${getSupplierName(
+                      product.supplier
+                    )}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">${
+                      product.stock
+                    }</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${
+                      product.minStock
+                    }</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$${product.salePrice.toLocaleString()}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
+                          product.status
+                        )}">
+                            ${getStatusText(product.status)}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatDate(
+                      product.lastUpdated
+                    )}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button onclick="editProduct(${
+                          product.id
+                        })" class="text-blue-600 hover:text-blue-900 mr-3">Editar</button>
+                        <button onclick="adjustStock(${
+                          product.id
+                        })" class="text-green-600 hover:text-green-900 mr-3">Stock</button>
+                        <button onclick="deleteProduct(${
+                          product.id
+                        })" class="text-red-600 hover:text-red-900">Eliminar</button>
+                    </td>
+                </tr>
+            `
+          )
+          .join("");
+
+        // Update showing count
+        const showing = `${start + 1}-${Math.min(
+          end,
+          filteredProducts.length
+        )}`;
+        document.getElementById("showingCount").textContent = showing;
+        document.getElementById("totalCount").textContent =
+          filteredProducts.length.toLocaleString();
+      }
+
+      // Helper functions
+      function getSupplierName(supplier) {
+        const suppliers = {
+          apple: "Apple Inc.",
+          samsung: "Samsung",
+          dell: "Dell Technologies",
+          hp: "HP Inc.",
+          sony: "Sony",
+        };
+        return suppliers[supplier] || supplier;
+      }
+
+      function getStatusColor(status) {
+        switch (status) {
+          case "available":
+            return "bg-green-100 text-green-800";
+          case "low":
+            return "bg-yellow-100 text-yellow-800";
+          case "out":
+            return "bg-red-100 text-red-800";
+          default:
+            return "bg-gray-100 text-gray-800";
+        }
+      }
+
+      function getStatusText(status) {
+        switch (status) {
+          case "available":
+            return "En Stock";
+          case "low":
+            return "Stock Bajo";
+          case "out":
+            return "Sin Stock";
+          default:
+            return "Desconocido";
+        }
+      }
+
+      function formatDate(dateStr) {
+        return new Date(dateStr).toLocaleString("es-ES");
+      }
+
+      // Pagination
+      function updatePagination() {
+        const totalPages = Math.ceil(filteredProducts.length / recordsPerPage);
+        document.getElementById("currentPageDisplay").textContent = currentPage;
+        document.getElementById("totalPagesDisplay").textContent = totalPages;
+
+        // Update buttons
+        document.getElementById("prevBtn").disabled = currentPage === 1;
+        document.getElementById("nextBtn").disabled =
+          currentPage === totalPages;
+
+        // Generate page numbers
+        const pageNumbers = document.getElementById("pageNumbers");
+        pageNumbers.innerHTML = "";
+
+        const startPage = Math.max(1, currentPage - 2);
+        const endPage = Math.min(totalPages, currentPage + 2);
+
+        for (let i = startPage; i <= endPage; i++) {
+          const button = document.createElement("button");
+          button.textContent = i;
+          button.className = `px-3 py-1 border rounded text-sm ${
+            i === currentPage
+              ? "bg-blue-600 text-white border-blue-600"
+              : "border-gray-300 hover:bg-gray-50"
+          }`;
+          button.onclick = () => goToPage(i);
+          pageNumbers.appendChild(button);
+        }
+      }
+
+      function previousPage() {
+        if (currentPage > 1) {
+          currentPage--;
+          renderTable();
+          updatePagination();
+        }
+      }
+
+      function nextPage() {
+        const totalPages = Math.ceil(filteredProducts.length / recordsPerPage);
+        if (currentPage < totalPages) {
+          currentPage++;
+          renderTable();
+          updatePagination();
+        }
+      }
+
+      function goToPage(page) {
+        currentPage = page;
+        renderTable();
+        updatePagination();
+      }
+
+      function changePageSize() {
+        recordsPerPage = parseInt(
+          document.getElementById("recordsPerPage").value
+        );
+        currentPage = 1;
+        renderTable();
+        updatePagination();
+      }
+
+      // Product management
+      function showAddModal() {
+        editingId = null;
+        document.getElementById("modalTitle").textContent =
+          "Agregar Nuevo Producto";
+        document.getElementById("productForm").reset();
+        document.getElementById("productModal").classList.remove("hidden");
+        document.getElementById("productModal").classList.add("flex");
+      }
+
+      function editProduct(id) {
+        editingId = id;
+        const product = products.find((p) => p.id === id);
+
+        document.getElementById("modalTitle").textContent = "Editar Producto";
+        document.getElementById("productSku").value = product.sku;
+        document.getElementById("productName").value = product.name;
+        document.getElementById("productCategory").value = product.category;
+        document.getElementById("productSupplier").value = product.supplier;
+        document.getElementById("productStock").value = product.stock;
+        document.getElementById("productMinStock").value = product.minStock;
+        document.getElementById("productCostPrice").value = product.costPrice;
+        document.getElementById("productSalePrice").value = product.salePrice;
+
+        document.getElementById("productModal").classList.remove("hidden");
+        document.getElementById("productModal").classList.add("flex");
+      }
+
+      function hideModal() {
+        document.getElementById("productModal").classList.add("hidden");
+        document.getElementById("productModal").classList.remove("flex");
+      }
+
+      function saveProduct() {
+        const formData = {
+          sku: document.getElementById("productSku").value,
+          name: document.getElementById("productName").value,
+          category: document.getElementById("productCategory").value,
+          supplier: document.getElementById("productSupplier").value,
+          stock: parseInt(document.getElementById("productStock").value),
+          minStock: parseInt(document.getElementById("productMinStock").value),
+          costPrice: parseFloat(
+            document.getElementById("productCostPrice").value
+          ),
+          salePrice: parseFloat(
+            document.getElementById("productSalePrice").value
+          ),
+          lastUpdated: new Date().toISOString().slice(0, 19).replace("T", " "),
+        };
+
+        // Validate
+        if (
+          !formData.sku ||
+          !formData.name ||
+          !formData.category ||
+          !formData.supplier
+        ) {
+          alert("Por favor completa todos los campos obligatorios.");
+          return;
+        }
+
+        // Determine status
+        formData.status =
+          formData.stock === 0
+            ? "out"
+            : formData.stock <= formData.minStock
+            ? "low"
+            : "available";
+
+        if (editingId) {
+          // Update existing
+          const index = products.findIndex((p) => p.id === editingId);
+          products[index] = { ...products[index], ...formData };
+        } else {
+          // Add new
+          formData.id = nextId++;
+          products.push(formData);
+        }
+
+        hideModal();
+        applyFilters();
+        updateStats();
+        updateSyncTime();
+      }
+
+      function adjustStock(id) {
+        const product = products.find((p) => p.id === id);
+        const newStock = prompt(
+          `Stock actual: ${product.stock}\nIngresa el nuevo stock:`,
+          product.stock
+        );
+
+        if (newStock !== null && !isNaN(newStock) && newStock >= 0) {
+          product.stock = parseInt(newStock);
+          product.status =
+            product.stock === 0
+              ? "out"
+              : product.stock <= product.minStock
+              ? "low"
+              : "available";
+          product.lastUpdated = new Date()
+            .toISOString()
+            .slice(0, 19)
+            .replace("T", " ");
+
+          applyFilters();
+          updateStats();
+          updateSyncTime();
+        }
+      }
+
+      function deleteProduct(id) {
+        if (
+          confirm(
+            "¿Estás seguro de que quieres eliminar este producto de la base de datos?"
+          )
+        ) {
+          products = products.filter((p) => p.id !== id);
+          applyFilters();
+          updateStats();
+          updateSyncTime();
+        }
+      }
+
+      // Bulk operations
+      function toggleSelectAll() {
+        const selectAll = document.getElementById("selectAll");
+        const checkboxes = document.querySelectorAll(".product-checkbox");
+        checkboxes.forEach((cb) => (cb.checked = selectAll.checked));
+      }
+
+      function bulkUpdate() {
+        const selected = Array.from(
+          document.querySelectorAll(".product-checkbox:checked")
+        ).map((cb) => parseInt(cb.value));
+        if (selected.length === 0) {
+          alert("Selecciona al menos un producto.");
+          return;
+        }
+
+        const action = prompt(
+          "Acciones disponibles:\n1. Actualizar precios (+10%)\n2. Ajustar stock mínimo\n3. Cambiar proveedor\n\nIngresa el número de acción:"
+        );
+
+        if (action === "1") {
+          selected.forEach((id) => {
+            const product = products.find((p) => p.id === id);
+            product.salePrice = Math.round(product.salePrice * 1.1 * 100) / 100;
+            product.lastUpdated = new Date()
+              .toISOString()
+              .slice(0, 19)
+              .replace("T", " ");
+          });
+          alert("Precios actualizados (+10%)");
+        } else if (action === "2") {
+          const newMinStock = prompt("Nuevo stock mínimo:");
+          if (newMinStock && !isNaN(newMinStock)) {
+            selected.forEach((id) => {
+              const product = products.find((p) => p.id === id);
+              product.minStock = parseInt(newMinStock);
+              product.status =
+                product.stock === 0
+                  ? "out"
+                  : product.stock <= product.minStock
+                  ? "low"
+                  : "available";
+              product.lastUpdated = new Date()
+                .toISOString()
+                .slice(0, 19)
+                .replace("T", " ");
+            });
+            alert("Stock mínimo actualizado");
+          }
+        }
+
+        applyFilters();
+        updateStats();
+        updateSyncTime();
+      }
+
+      // Export functions
+      function exportData(format) {
+        const data = filteredProducts.map((p) => ({
+          SKU: p.sku,
+          Producto: p.name,
+          Categoria: p.category,
+          Proveedor: getSupplierName(p.supplier),
+          Stock: p.stock,
+          "Stock Minimo": p.minStock,
+          "Precio Compra": p.costPrice,
+          "Precio Venta": p.salePrice,
+          Estado: getStatusText(p.status),
+          "Ultima Actualizacion": p.lastUpdated,
+        }));
+
+        if (format === "csv") {
+          const csv = convertToCSV(data);
+          downloadFile(csv, "inventario.csv", "text/csv");
+        } else if (format === "excel") {
+          alert(
+            "Exportación a Excel simulada. En un sistema real, se generaría un archivo .xlsx"
+          );
+        }
+      }
+
+      function convertToCSV(data) {
+        const headers = Object.keys(data[0]).join(",");
+        const rows = data.map((row) => Object.values(row).join(",")).join("\n");
+        return headers + "\n" + rows;
+      }
+
+      function downloadFile(content, filename, contentType) {
+        const blob = new Blob([content], { type: contentType });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        a.click();
+        window.URL.revokeObjectURL(url);
+      }
+
+      function generateReport() {
+        alert(
+          "Generando reporte completo...\n\n" +
+            "El reporte incluirá:\n" +
+            "- Análisis de inventario\n" +
+            "- Productos con stock bajo\n" +
+            "- Valoración total\n" +
+            "- Recomendaciones de reposición\n\n" +
+            "En un sistema real, se generaría un PDF detallado."
+        );
+      }
+
+      // Database operations
+      function syncDatabase() {
+        document.querySelector('button[onclick="syncDatabase()"]').textContent =
+          "Sincronizando...";
+
+        setTimeout(() => {
+          // Simulate sync
+          updateSyncTime();
+          document.querySelector(
+            'button[onclick="syncDatabase()"]'
+          ).textContent = "Sincronizar DB";
+          alert("Base de datos sincronizada correctamente.");
+        }, 2000);
+      }
+
+      function updateSyncTime() {
+        const now = new Date();
+        document.getElementById("lastSync").textContent =
+          now.toLocaleString("es-ES");
+      }
+
+      // Initialize on load
+      document.addEventListener("DOMContentLoaded", init);
+    </script>
+    <script>
+      (function () {
+        function c() {
+          var b = a.contentDocument || a.contentWindow.document;
+          if (b) {
+            var d = b.createElement("script");
+            d.innerHTML =
+              "window.__CF$cv$params={r:'97d49099a6a6b20e',t:'MTc1NzU2NjQ0Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";
+            b.getElementsByTagName("head")[0].appendChild(d);
+          }
+        }
+        if (document.body) {
+          var a = document.createElement("iframe");
+          a.height = 1;
+          a.width = 1;
+          a.style.position = "absolute";
+          a.style.top = 0;
+          a.style.left = 0;
+          a.style.border = "none";
+          a.style.visibility = "hidden";
+          document.body.appendChild(a);
+          if ("loading" !== document.readyState) c();
+          else if (window.addEventListener)
+            document.addEventListener("DOMContentLoaded", c);
+          else {
+            var e = document.onreadystatechange || function () {};
+            document.onreadystatechange = function (b) {
+              e(b);
+              "loading" !== document.readyState &&
+                ((document.onreadystatechange = e), c());
+            };
+          }
+        }
+      })();
+    </script>
+  </body>
+</html>
