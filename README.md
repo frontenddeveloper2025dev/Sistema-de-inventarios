@@ -1,2 +1,1 @@
-# inventario
-Created with CodeSandbox
+
